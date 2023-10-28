@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=
+apiVersion: kafka.strimzi.io/v1beta2
+kind: Kafka
+metadata:
+  name: keda-demo
+spec:
+  kafka:
+    version: 3.5.1
+    replicas: 3
+    listeners:
+      - type: internal
+        tls: false
+        name: internal
+        port: 9092
+    config:
+      offsets.topic.replication.factor: 3
+      transaction.state.log.replication.factor: 3
+      transaction.state.log.min.isr: 2
+      log.message.format.version: "2.8"
+    storage:
+      type: ephemeral
+  zookeeper:
+    replicas: 3
+    storage:
+      type: ephemeral
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}
+
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: demo
+  labels:
+    strimzi.io/cluster: keda-demo
+spec:
+  partitions: 3
+  replicas: 2
+
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: demo-test
+  labels:
+    strimzi.io/cluster: keda-demo
+spec:
+  partitions: 3
+  replicas: 2

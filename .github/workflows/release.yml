@@ -1,0 +1,74 @@
+name: release
+
+on:
+  push:
+    branches:
+      - "main"
+    tags:
+      - "v*.*.*"
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+
+jobs:
+  build:
+    permissions:
+      contents: read
+      packages: write
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - context: ./consumer
+            image: ghcr.io/marthydavid/kafka-keda-golang-consumer
+          - context: ./producer
+            image: ghcr.io/marthydavid/kafka-keda-golang-producer
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.1.0
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3.0.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.0.0
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3.0.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5.0.0
+        with:
+          images: ${{ matrix.image }}
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v5.0.0
+        with:
+          context: ${{ matrix.context }}
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          push: true
+          provenance: false
+          sbom: false
+
+#      - name: Scan for vulnerabilities
+#        id: scan
+#        uses: crazy-max/ghaction-container-scan@v2
+#        with:
+#          image: ${{ steps.meta.outputs.tags }}
+#          dockerfile: ./Dockerfile
+#
+#      - name: Upload SARIF file
+#        if: ${{ steps.scan.outputs.sarif != '' }}
+#        uses: github/codeql-action/upload-sarif@v2
+#        with:
+#          sarif_file: ${{ steps.scan.outputs.sarif }}
