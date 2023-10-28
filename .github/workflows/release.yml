@@ -5,14 +5,50 @@ on:
     branches:
       - "main"
     tags:
-      - "v*.*.*"
+      - "*.*.*"
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
 
 jobs:
-  build:
+  build-binary:
+    permissions:
+      contents: read
+      packages: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.1.0
+      - name: Install cross-complier for linux/arm64
+        run: sudo apt install -y gcc-aarch64-linux-gnu
+      - name: Release
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          args: release --skip-publish --config .go-releaser.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: kafka-keda-golang
+          path: dist/kafka-keda-golang*
+
+#      - name: Scan for vulnerabilities
+#        id: scan
+#        uses: crazy-max/ghaction-container-scan@v2
+#        with:
+#          image: ${{ steps.meta.outputs.tags }}
+#          dockerfile: ./Dockerfile
+#
+#      - name: Upload SARIF file
+#        if: ${{ steps.scan.outputs.sarif != '' }}
+#        uses: github/codeql-action/upload-sarif@v2
+#        with:
+#          sarif_file: ${{ steps.scan.outputs.sarif }}
+
+  build-docker:
+    needs: build-binary
     permissions:
       contents: read
       packages: write
@@ -28,7 +64,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4.1.0
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3.0.0
 
@@ -59,16 +94,3 @@ jobs:
           push: true
           provenance: false
           sbom: false
-
-#      - name: Scan for vulnerabilities
-#        id: scan
-#        uses: crazy-max/ghaction-container-scan@v2
-#        with:
-#          image: ${{ steps.meta.outputs.tags }}
-#          dockerfile: ./Dockerfile
-#
-#      - name: Upload SARIF file
-#        if: ${{ steps.scan.outputs.sarif != '' }}
-#        uses: github/codeql-action/upload-sarif@v2
-#        with:
-#          sarif_file: ${{ steps.scan.outputs.sarif }}
