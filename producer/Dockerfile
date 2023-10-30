@@ -1,15 +1,15 @@
-# # Build stage
-# FROM --platform=${BUILDPLATFORM:-linux/amd64} golang:1.21.3-bullseye AS builder
+# Build stage
+FROM --platform=${BUILDPLATFORM:-linux/amd64} golang:1.21.3-alpine AS builder
 
-# ARG TARGETPLATFORM
-# ARG BUILDPLATFORM
-# ARG TARGETOS
-# ARG TARGETARCH
-# WORKDIR /app
-# COPY *.go go.* /app/
-# COPY build.sh /
-# RUN apt update -y && apt install -y musl-dev libc-dev gcc-aarch64-linux-gnu
-# RUN /build.sh
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
+WORKDIR /app
+COPY *.go go.* /app/
+RUN apk add --no-cache build-base
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o producer
+
 
 # Final stage
 FROM --platform=${TARGETPLATFORM:-linux/amd64} alpine:3.18
@@ -17,6 +17,6 @@ LABEL org.opencontainers.image.source	https://github.com/marthydavid/kafka-keda-
 RUN apk add --no-cache ca-certificates
 
 WORKDIR /app
-COPY --from=builder /app/consumer /app/consumer
+COPY --from=builder /app/producer /app/producer
 
-CMD ["/app/consumer"]
+CMD ["/app/producer"]

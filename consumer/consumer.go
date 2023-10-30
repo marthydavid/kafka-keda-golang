@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -9,9 +10,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/segmentio/kafka-go"
 )
 
 var (
@@ -27,8 +28,8 @@ var (
 )
 
 func main() {
-	brokerConfigMap := os.Getenv("KAFKA_BROKERS")
-	if brokerConfigMap == "" {
+	broker := os.Getenv("KAFKA_BROKERS")
+	if broker == "" {
 		fmt.Println("KAFKA_BROKERS environment variable not set.")
 		os.Exit(1)
 	}
@@ -40,18 +41,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	c, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers": brokerConfigMap,
-		"group.id":          "my-consumer-group",
-		"auto.offset.reset": "earliest",
-	})
-
-	if err != nil {
-		fmt.Printf("Error creating Kafka consumer: %v\n", err)
-		os.Exit(1)
+	config := kafka.ReaderConfig{
+		Brokers:  []string{broker},
+		Topic:    topic,
+		GroupID:  "my-consumer-group",
+		MinBytes: 10,   // Minimum number of bytes to fetch from the broker
+		MaxBytes: 10e6, // Maximum number of bytes to fetch from the broker
 	}
-
-	defer c.Close()
+	reader := kafka.NewReader(config)
+	defer reader.Close()
 
 	// Create an HTTP server for metrics and health check endpoints
 	http.Handle("/metrics", promhttp.Handler())
@@ -73,41 +71,30 @@ func main() {
 		http.ListenAndServe(":8080", nil)
 	}()
 
-	err = c.SubscribeTopics([]string{topic}, nil)
-	if err != nil {
-		fmt.Printf("Error subscribing to topic: %v\n", err)
-		os.Exit(1)
-	}
-
 	sigchan := make(chan os.Signal, 1)
 	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
 
-	run := true
-
 	interval := time.Second / time.Duration(messagesPerSecond)
 
-	for run == true {
+	for {
 		select {
 		case sig := <-sigchan:
 			fmt.Printf("Caught signal %v: terminating\n", sig)
-			run = false
+			return
 		default:
-			ev := c.Poll(100)
-			if ev == nil {
+			m, err := reader.ReadMessage(context.Background())
+			if err != nil {
+				fmt.Printf("Error reading message: %v\n", err)
 				continue
 			}
-			switch e := ev.(type) {
-			case *kafka.Message:
-				fmt.Printf("Message on %s: %s\n", e.TopicPartition, string(e.Value))
 
-				// Instrument Prometheus metrics
-				messagesConsumed.Inc()
-				start := time.Now()
-				duration := time.Since(start)
-				messageConsumptionDuration.Observe(duration.Seconds())
-			case kafka.Error:
-				fmt.Printf("Error: %v\n", e)
-			}
+			fmt.Printf("Message on topic %s: %s\n", m.Topic, string(m.Value))
+
+			// Instrument Prometheus metrics
+			messagesConsumed.Inc()
+			start := time.Now()
+			duration := time.Since(start)
+			messageConsumptionDuration.Observe(duration.Seconds())
 
 			// Sleep to control the consumption rate
 			time.Sleep(interval)
@@ -116,42 +103,26 @@ func main() {
 }
 
 func isReady() bool {
-	// Check if the Kafka broker connection is established
-	brokerConfigMap := os.Getenv("KAFKA_BROKERS")
-	if brokerConfigMap == "" {
+	// Check if the Kafka broker is specified
+	broker := os.Getenv("KAFKA_BROKERS")
+	if broker == "" {
 		return false
 	}
 
-	c, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers": brokerConfigMap,
-		"group.id":          "my-consumer-group",
-		"auto.offset.reset": "earliest",
-	})
+	// Attempt to create a Kafka reader to check Kafka connectivity
+	config := kafka.ReaderConfig{
+		Brokers: []string{broker},
+		Topic:   "test-topic-for-readiness-check",
+		GroupID: "readiness-check-group",
+	}
+	reader := kafka.NewReader(config)
+	defer reader.Close()
 
+	// Attempt to read a test message
+	_, err := reader.ReadMessage(context.Background())
 	if err != nil {
 		return false
 	}
 
-	defer c.Close()
-
-	// Subscribe to a test topic to check Kafka connectivity
-	testTopic := os.Getenv("KAFKA_TOPIC_TEST")
-	err = c.SubscribeTopics([]string{testTopic}, nil)
-	if err != nil {
-		return false
-	}
-
-	// Attempt to consume a test message
-	timeout := 5000 // Set a timeout (in milliseconds) for consuming a message
-	ev := c.Poll(timeout)
-	if ev == nil {
-		return false
-	}
-	_, isMessage := ev.(*kafka.Message)
-	if !isMessage {
-		return false
-	}
-
-	// If all checks pass, the application is considered ready
 	return true
 }

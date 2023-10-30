@@ -12,27 +12,27 @@ env:
 
 
 jobs:
-  build-binary:
-    permissions:
-      contents: write
-      packages: write
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4.1.0
-      - name: Install cross-complier for linux/arm64
-        run: sudo apt install -y gcc-aarch64-linux-gnu
-      - name: Release
-        uses: goreleaser/goreleaser-action@v5
-        with:
-          args: release --config .go-releaser.yaml
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upload
-        uses: actions/upload-artifact@v3
-        with:
-          name: kafka-keda-golang
-          path: dist/kafka-keda-golang*
+  # build-binary:
+  #   permissions:
+  #     contents: read
+  #     packages: write
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4.1.0
+  #     - name: Install cross-complier for linux/arm64
+  #       run: sudo apt install -y gcc-aarch64-linux-gnu
+  #     - name: Release
+  #       uses: goreleaser/goreleaser-action@v5
+  #       with:
+  #         args: release --skip-publish --config .go-releaser.yaml
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #     - name: Upload
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: kafka-keda-golang
+  #         path: dist/kafka-keda-golang*
 
 #      - name: Scan for vulnerabilities
 #        id: scan
@@ -48,7 +48,7 @@ jobs:
 #          sarif_file: ${{ steps.scan.outputs.sarif }}
 
   build-docker:
-    needs: build-binary
+#    needs: build-binary
     permissions:
       contents: read
       packages: write
