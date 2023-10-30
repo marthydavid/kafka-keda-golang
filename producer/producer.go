@@ -10,7 +10,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/segmentio/kafka-go"
+	kafka "github.com/segmentio/kafka-go"
 )
 
 var (
@@ -28,8 +28,6 @@ var (
 func main() {
 	broker := os.Getenv("KAFKA_BROKERS")
 	topic := os.Getenv("KAFKA_TOPIC")
-	numMessagesStr := os.Getenv("MAX_MESSAGES")
-	numMessages, err := strconv.Atoi(numMessagesStr)
 	messagesPerSecondStr := os.Getenv("MESSAGES_PER_SECOND")
 	messagesPerSecond, err := strconv.Atoi(messagesPerSecondStr)
 	if err != nil {
@@ -68,8 +66,8 @@ func main() {
 	// Number of messages to produce
 	interval := time.Second / time.Duration(messagesPerSecond)
 
-	for i := 1; i <= numMessages; i++ {
-		message := fmt.Sprintf("Message %d", i)
+	for {
+		message := fmt.Sprintf("Message %d", time.Now().UnixNano())
 
 		err := writer.WriteMessages(
 			context.Background(),
@@ -80,9 +78,7 @@ func main() {
 		)
 
 		if err != nil {
-			fmt.Printf("Failed to produce message %d: %v\n", i, err)
-		} else {
-			fmt.Printf("Produced message %d: %s\n", i, message)
+			fmt.Printf("Failed to produce message: %v\n", err)
 		}
 
 		// Instrument Prometheus metrics
@@ -94,8 +90,6 @@ func main() {
 		// Sleep to control the rate
 		time.Sleep(interval)
 	}
-
-	writer.Close()
 }
 
 // Add a custom function to check application readiness
