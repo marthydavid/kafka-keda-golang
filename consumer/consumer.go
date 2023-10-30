@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -12,7 +13,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/segmentio/kafka-go"
+	kafka "github.com/segmentio/kafka-go"
 )
 
 var (
@@ -110,16 +111,17 @@ func isReady() bool {
 	}
 
 	// Attempt to create a Kafka reader to check Kafka connectivity
-	config := kafka.ReaderConfig{
-		Brokers: []string{broker},
-		Topic:   "test-topic-for-readiness-check",
-		GroupID: "readiness-check-group",
-	}
-	reader := kafka.NewReader(config)
-	defer reader.Close()
+	testTopic := os.Getenv("KAFKA_TOPIC_TEST")
+	partition := 0
 
+	conn, err := kafka.DialLeader(context.Background(), "tcp", broker, testTopic, partition)
+	if err != nil {
+		log.Fatal("failed to dial leader:", err)
+	}
+	if err := conn.Close(); err != nil {
+		log.Fatal("failed to close connection:", err)
+	}
 	// Attempt to read a test message
-	_, err := reader.ReadMessage(context.Background())
 	if err != nil {
 		return false
 	}

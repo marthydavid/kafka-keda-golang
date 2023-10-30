@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -89,6 +90,7 @@ func main() {
 
 		// Sleep to control the rate
 		time.Sleep(interval)
+		fmt.Printf("Message on topic %s: %s\n", topic, string(message))
 	}
 }
 
@@ -100,25 +102,21 @@ func isReady() bool {
 		return false
 	}
 
+	// Attempt to create a Kafka reader to check Kafka connectivity
 	testTopic := os.Getenv("KAFKA_TOPIC_TEST")
-	writer := kafka.NewWriter(kafka.WriterConfig{
-		Brokers: []string{broker},
-		Topic:   testTopic,
-	})
+	partition := 0
 
-	err := writer.WriteMessages(
-		context.Background(),
-		kafka.Message{
-			Key:   nil,
-			Value: []byte("Test message for readiness check"),
-		},
-	)
-	writer.Close()
-
+	conn, err := kafka.DialLeader(context.Background(), "tcp", broker, testTopic, partition)
+	if err != nil {
+		log.Fatal("failed to dial leader:", err)
+	}
+	if err := conn.Close(); err != nil {
+		log.Fatal("failed to close connection:", err)
+	}
+	// Attempt to read a test message
 	if err != nil {
 		return false
 	}
 
-	// If all checks pass, the application is considered ready
 	return true
 }
