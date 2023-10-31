@@ -2,6 +2,7 @@
 apiVersion: kafka.strimzi.io/v1beta2
 kind: Kafka
 metadata:
+  namespace: strimzi-system
   name: keda-demo
 spec:
   kafka:
@@ -46,6 +47,7 @@ spec:
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaTopic
 metadata:
+  namespace: strimzi-system
   name: demo
   labels:
     strimzi.io/cluster: keda-demo
@@ -57,6 +59,7 @@ spec:
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaTopic
 metadata:
+  namespace: strimzi-system
   name: demo-test
   labels:
     strimzi.io/cluster: keda-demo
@@ -69,6 +72,7 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  namespace: strimzi-system
   name: kafka-metrics
   labels:
     strimzi.io/cluster: keda-demo
@@ -203,6 +207,7 @@ data:
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:
+  namespace: strimzi-system
   name: kafka-resources-metrics
   labels:
     app: strimzi
