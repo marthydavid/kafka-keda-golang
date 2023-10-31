@@ -13,8 +13,9 @@
   },
   "packageRules": [
     {
-      "description": "Auto merge action",
-      "matchDatasources": ["github-actions"],
+      "description": "Auto merge GH action",
+      "matchManagers": ["github-actions"],
+      "matchDatasources": ["github-tags"],
       "automerge": true,
       "ignoreTests": true,
       "automergeType": "pr",
