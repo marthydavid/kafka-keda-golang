@@ -1,0 +1,38 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "semanticCommits": "enabled",
+  "extends": [
+    "config:recommended",
+    "mergeConfidence:all-badges"
+  ],
+  "github-actions": {
+    "fileMatch": [
+      "^(workflow-templates|\\.github/workflows)/[^/]+\\.ya?ml$",
+      "(^|/)action\\.ya?ml$"
+    ]
+  },
+  "packageRules": [
+    {
+      "description": "Auto merge action",
+      "matchDatasources": ["github-actions"],
+      "automerge": true,
+      "ignoreTests": true,
+      "automergeType": "pr",
+      "matchUpdateTypes": ["patch", "minor"]
+    },
+    {
+      "description": "Auto merge container",
+      "matchDatasources": ["docker"],
+      "automerge": true,
+      "automergeType": "pr",
+      "matchUpdateTypes": ["patch", "minor"]
+    },
+    {
+      "description": "Auto merge gh releases",
+      "matchDatasources": ["github-releases"],
+      "automerge": true,
+      "automergeType": "pr",
+      "matchUpdateTypes": ["patch", "minor"]
+    }
+  ]
+}
