@@ -28,6 +28,13 @@ var (
 	})
 )
 
+type Timespan time.Duration
+
+func (t Timespan) Format(format string) string {
+	z := time.Unix(0, 0).UTC()
+	return z.Add(time.Duration(t)).Format(format)
+}
+
 func main() {
 	broker := os.Getenv("KAFKA_BROKERS")
 	if broker == "" {
@@ -35,6 +42,11 @@ func main() {
 		os.Exit(1)
 	}
 	topic := os.Getenv("KAFKA_TOPIC")
+	consumerGroup := os.Getenv("KAFKA_CONSUMER_GROUP")
+	if consumerGroup == "" {
+		consumerGroup = "my-consumer-group"
+	}
+
 	messagesPerSecondStr := os.Getenv("MESSAGES_PER_SECOND")
 	messagesPerSecond, err := strconv.Atoi(messagesPerSecondStr)
 	if err != nil {
@@ -45,7 +57,7 @@ func main() {
 	config := kafka.ReaderConfig{
 		Brokers:  []string{broker},
 		Topic:    topic,
-		GroupID:  "my-consumer-group",
+		GroupID:  consumerGroup,
 		MinBytes: 10,   // Minimum number of bytes to fetch from the broker
 		MaxBytes: 10e6, // Maximum number of bytes to fetch from the broker
 	}
@@ -88,7 +100,7 @@ func main() {
 				fmt.Printf("Error reading message: %v\n", err)
 				continue
 			}
-
+			fmt.Printf("interval: %s\n", Timespan(interval).Format("15:04:05.000"))
 			fmt.Printf("Message on topic %s: %s\n", m.Topic, string(m.Value))
 
 			// Instrument Prometheus metrics

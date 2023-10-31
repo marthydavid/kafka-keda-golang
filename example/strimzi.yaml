@@ -52,7 +52,7 @@ metadata:
   labels:
     strimzi.io/cluster: keda-demo
 spec:
-  partitions: 3
+  partitions: 10
   replicas: 2
 
 ---

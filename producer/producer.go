@@ -26,6 +26,13 @@ var (
 	})
 )
 
+type Timespan time.Duration
+
+func (t Timespan) Format(format string) string {
+	z := time.Unix(0, 0).UTC()
+	return z.Add(time.Duration(t)).Format(format)
+}
+
 func main() {
 	broker := os.Getenv("KAFKA_BROKERS")
 	topic := os.Getenv("KAFKA_TOPIC")
@@ -87,7 +94,7 @@ func main() {
 		start := time.Now()
 		duration := time.Since(start)
 		messageProductionDuration.Observe(duration.Seconds())
-
+		fmt.Printf("interval: %s\n", Timespan(interval).Format("15:04:05.000"))
 		// Sleep to control the rate
 		time.Sleep(interval)
 		fmt.Printf("Message on topic %s: %s\n", topic, string(message))

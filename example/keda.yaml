@@ -5,13 +5,15 @@ metadata:
   namespace: demo
 spec:
   scaleTargetRef:
-    deploymentName: consumer  # Replace with your deployment name
+    name: consumer  # Replace with your deployment name
   triggers:
     - type: kafka
       metadata:
-        brokerList: keda-demo-kafka-bootstrap.strimzi-system.svc:9092  # Replace with your Kafka broker list
+        activationLagThreshold: "10"
+        bootstrapServers: keda-demo-kafka-bootstrap.strimzi-system.svc:9092  # Replace with your Kafka broker list
         topic: demo  # Replace with your Kafka topic
         consumerGroup: my-consumer-group  # Replace with your consumer group
         consumerOffset: latest  # Replace with the desired consumer offset
-        minReplicaCount: 0  # Min number of replicas
-        maxReplicaCount: 10  # Maximum number of replicas
+        lagTreshold: "1000"
+        maxReplicaCount: "10"  # Maximum number of replicas
+        minReplicaCount: "0"  # Min number of replicas
