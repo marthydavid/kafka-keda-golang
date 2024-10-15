@@ -3,7 +3,7 @@ module github.com/marthydavid/kafka-keda-golang/producer
 go 1.21
 
 require (
-	github.com/prometheus/client_golang v1.20.3
+	github.com/prometheus/client_golang v1.20.5
 	github.com/segmentio/kafka-go v0.4.47
 )
 
