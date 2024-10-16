@@ -21,16 +21,16 @@ helm repo update
 helm upgrade --install kube-prometheus-stack -n monitoring --create-namespace prometheus-community/kube-prometheus-stack
 
 # Install strimzi
-helm upgrade --install strimzi-kafka-operator -n strimzi-system --create-namespace strimzi/strimzi-kafka-operator
+helm upgrade --install --version 0.43.0 strimzi-kafka-operator -n strimzi-system --create-namespace strimzi/strimzi-kafka-operator
 
 # Install Keda
-helm upgrade --install keda -n keda --create-namespace kedacore/keda
+helm upgrade --install --version 2.15.1 keda -n keda --create-namespace kedacore/keda
 
 # Install producer
-helm upgrade --install producer -n demo --create-namespace marthydavid/producer --set replicaCount=0
+helm upgrade --install producer -n demo --create-namespace marthydavid/producer --set replicaCount=0 --set producer.kafka.topic=demo
 
 # Install consumer
-helm upgrade --install consumer -n demo --create-namespace marthydavid/consumer --set replicaCount=0
+helm upgrade --install consumer -n demo --create-namespace marthydavid/consumer --set replicaCount=0 --set producer.kafka.topic=demo
 ```
 
 Every application should be installed a short summary:
