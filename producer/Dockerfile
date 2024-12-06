@@ -12,7 +12,7 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o producer
 
 
 # Final stage
-FROM --platform=${TARGETPLATFORM:-linux/amd64} alpine:3.20
+FROM --platform=${TARGETPLATFORM:-linux/amd64} alpine:3.21
 LABEL org.opencontainers.image.source	https://github.com/marthydavid/kafka-keda-golang
 RUN apk add --no-cache ca-certificates
 
