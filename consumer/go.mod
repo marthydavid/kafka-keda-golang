@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/prometheus/client_golang v1.23.0
-	github.com/segmentio/kafka-go v0.4.48
+	github.com/segmentio/kafka-go v0.4.49
 )
 
 require (
